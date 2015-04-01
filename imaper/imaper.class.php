@@ -2,9 +2,26 @@
 class iMaper {
     public function __construct() 
     {
-        $this->connect();
+        $this->connect(); // Connect MAIL
+        $this->conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME) or die("Error " . mysqli_error($link));  // Connect DB
+        
+        $emails = $this->get_emails(); // Extract all the emails, that we will check for in the email
+            
+        $this->ca = $emails['ca'];
+        $this->co = $emails['co'];
+                    
 
-        $mails = imap_search($this->mbox, 'ALL from guntram'); // Here we can define additonal seach IN-MAIL criterias, such as "UNSEEN from user@mail.com", or "SEEN from Tania" (Don`t ask me who Tania is - no idea.)
+        foreach ($this->ca as $email=>$id)
+            $this->main($email);
+        
+        foreach ($this->co as $email=>$id)
+            $this->main($email);        
+
+    }
+    
+    private function main($mail)
+    {
+        $mails = imap_search($this->mbox, 'ALL from '.$mail); // Here we can define additonal seach IN-MAIL criterias, such as "UNSEEN from user@mail.com", or "SEEN from Tania" (Don`t ask me who Tania is - no idea.)
         if ($mails)
         {
             rsort($mails);
@@ -16,10 +33,12 @@ class iMaper {
             }
             // Save all collected data into DB
             if (count($data))
-                $this->save_to_db($data);
+                $this->save_to_db($data, $mail);
         }
+        
     }
-    
+
+
     private function connect()
     {
         // Chose protocol for connection and setup the port (configurable from config.php -> IMAP_POP3)
@@ -79,34 +98,74 @@ class iMaper {
         return $message;
     }
     
-    private function save_to_db($data)
+    private function save_to_db($data, $mail)
     {
-        $conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME) or die("Error " . mysqli_error($link)); 
 
         foreach ($data as $d)
         {
-            $sql = "SELECT `id` FROM `" . SAVE_TO_TABLE . "` WHERE `activity_id` = '" . $d['uid']. "'"; 
-            $res = $conn->query($sql);
-            while ($row = mysqli_fetch_assoc($res))
-                    $id = $row['id'];
 
+            // 4a. If there's a special character in the subject line 
+            // (for example a '#' - configurable) then don't match the candidate record - 
+            // update the client activity record instead.     
+            if ( stripos(MAGIC_SYMBOL, $d['subject']) ) 
+            {
+                    $in_select = "contact";
+                    $in_func = "contact_id";  
+            } 
+            else
+            {
+                    $in_select = "candidate";
+                    $in_func = "candidate_id";  
+            }    
+            
+            $internal_select = "SELECT `$in_func` as dataitem_id FROM `$in_select` WHERE `email1` = '".$mail."' OR `email2` = '".$mail."'";
+            $res = $this->conn->query($internal_select);
+            while ($row = mysqli_fetch_assoc($res))
+                    $dataitem_id = $row['dataitem_id'];
+            
+            // ALTER TABLE `opencats`.`activity` ADD COLUMN `message_uid` INT(11) NULL AFTER `date_modified`;
+            $sql = "SELECT `activity_id` FROM `" . SAVE_TO_TABLE . "` WHERE `message_uid` = '" . $d['uid']. "'";
+            $res = $this->conn->query($sql);
+            while ($row = mysqli_fetch_assoc($res))
+                $id = $row['activity_id'];
             if ($id)
                 // Record exists -> UPDATE
                 $sql = "UPDATE `" . SAVE_TO_TABLE . "` SET 
-                                        `notes` = '".mysqli_real_escape_string($conn, $d['body'])."',
+                                        `notes` = '".mysqli_real_escape_string($this->conn, $d['body'])."',
+                                        `data_item_id` = '" . $dataitem_id . "', 
                                         `date_modified` = NOW()
-                                        WHERE `id` = '".$id."'";        
+                                        WHERE `activity_id` = '".$id."'";        
+
             else
                 // Record is new -> INSERT 
                 $sql = "INSERT INTO " . SAVE_TO_TABLE . " 
-                                        (`activity_id`, `date_created`, `notes`)
+                                        (`message_uid`, `date_created`, `notes`, `data_item_id`)
                                         VALUES
-                                        ('".$d['uid']."', NOW(), '".mysqli_real_escape_string($conn, $d['body'])."')   
+                                        ('".$d['uid']."', NOW(), '".mysqli_real_escape_string($this->conn, $d['body'])."', '".$dataitem_id."')   
                                      ";
-            $conn->query($sql);
+            $this->conn->query($sql);
             echo IMAP_USER . ": #" . $d['uid'] ."\n";
         }
               
+    }
+    
+    private function get_emails()
+    {
+        $sql = "SELECT `contact_id`,`email1`,`email2` FROM `contact`"; 
+            $res = $this->conn->query($sql);
+            while ($row = mysqli_fetch_assoc($res))
+            {
+                    $co_mail[$row['email1']] = $row['contact_id'];
+                    $co_mail[$row['email2']] = $row['contact_id'];
+            }
+            
+        $sql = "SELECT `candidate_id`, `email1` FROM `candidate` WHERE `is_active` ='1'"; 
+            $res = $this->conn->query($sql);
+            while ($row = mysqli_fetch_assoc($res))
+                    $ca_mail[$row['email1']] = $row['candidate_id'];
+
+        
+        return array("co"=>$co_mail, "ca"=>$ca_mail);
     }
     
     private function encodeMessage($msg, $type)
