@@ -64,7 +64,7 @@ class iMaper {
 	// Note for some mail servers you will need to check the // 'Sent Mail' folder rather than 'Sent'
         //        $this->mbox = imap_open("{".IMAP_HOST.":".IMAP_PORT."/".IMAP_PROTO."/novalidate-cert}", IMAP_USER, IMAP_PASS, OPERATOR) or die("Can not connect to: " . IMAP_HOST );
 		  $this->mbox = imap_open("{".IMAP_HOST.":".IMAP_PORT."/".IMAP_PROTO."/novalidate-cert}Sent", IMAP_USER, IMAP_PASS, OPERATOR) or die("Can not connect to: " . IMAP_HOST );
-	}
+      }
     
     private function get_message_details($message_id)
     {
