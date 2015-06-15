@@ -21,7 +21,10 @@ class iMaper {
     
     private function main($mail)
     {
-        $mails = imap_search($this->mbox, 'ALL from '.$mail); // Here we can define additonal seach IN-MAIL criterias, such as "UNSEEN from user@mail.com", or "SEEN from Tania" (Don`t ask me who Tania is - no idea.)
+    //	The disabled line below is if you want to search on all inbound emails rather than outbound 
+    //        $mails = imap_search($this->mbox, 'ALL from '.$mail); // Here we can define additonal seach IN-MAIL criterias, such as "UNSEEN from user@mail.com", or "SEEN from Tania" (Don`t ask me who Tania is - no idea.)
+    //	The line below searches on all outbound emails.  
+	      $mails = imap_search($this->mbox, 'ALL to '.$mail);
         if ($mails)
         {
             rsort($mails);
@@ -57,8 +60,11 @@ class iMaper {
             define("OPERATOR", "");
         }
         // Connect to the mail server
-        $this->mbox = imap_open("{".IMAP_HOST.":".IMAP_PORT."/".IMAP_PROTO."/novalidate-cert}", IMAP_USER, IMAP_PASS, OPERATOR) or die("Can not connect to: " . IMAP_HOST );
-    }
+	// The disabled option is to parse on incoming emails. 
+	// Note for some mail servers you will need to check the // 'Sent Mail' folder rather than 'Sent'
+        //        $this->mbox = imap_open("{".IMAP_HOST.":".IMAP_PORT."/".IMAP_PROTO."/novalidate-cert}", IMAP_USER, IMAP_PASS, OPERATOR) or die("Can not connect to: " . IMAP_HOST );
+		  $this->mbox = imap_open("{".IMAP_HOST.":".IMAP_PORT."/".IMAP_PROTO."/novalidate-cert}Sent", IMAP_USER, IMAP_PASS, OPERATOR) or die("Can not connect to: " . IMAP_HOST );
+	}
     
     private function get_message_details($message_id)
     {
