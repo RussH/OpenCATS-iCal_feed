@@ -20,6 +20,10 @@ Note the directions on line 131 of imaper.class.php;
 
 - for this script to work you need to run that command to add a 'message_uid' field to the activity table.
 
+- Dependant upon your mailserver, your outbound email folder will be called 'Sent' or 'Sent Folder' etc. Update line 66 in imaper.class.php to match;
+			  $this->mbox = imap_open("{".IMAP_HOST.":".IMAP_PORT."/".IMAP_PROTO."/novalidate-cert}**Sent**", IMAP_USER, IMAP_PASS, OPERATOR) or die("Can not connect to: " . IMAP_HOST );
+
+
 ##Author
 Written by Magician on behalf of RussH
 
