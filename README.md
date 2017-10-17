@@ -1,6 +1,6 @@
 # ICal feed for OpenCATS  
 
-##Overview
+## Overview
 This is a simple standalone app to conenct to the opencats databse, and generate an iCal feed for public appointments. 
 
 ##Usage
