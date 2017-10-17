@@ -1,5 +1,5 @@
 <?php
-class iMaper {
+class iCal_feed {
     public function __construct() 
     {
         $this->conn = mysqli_connect(DB_HOST, DB_USER, DB_PASS, DB_NAME) or die("Error " . mysqli_error($link));  // Connect DB
@@ -17,27 +17,37 @@ class iMaper {
             $this->main($email);        
 
     }
+
+        private function encode_ical($data, $ical)
+        // the iCal date format. Note the Z on the end indicates a UTC timestamp.
+        define('DATE_ICAL', 'Ymd\THis\Z');
     
-    private function main($mail)
-    {
-    //	The disabled line below is if you want to search on all inbound emails rather than outbound 
-    //        $mails = imap_search($this->mbox, 'ALL from '.$mail); // Here we can define additonal seach IN-MAIL criterias, such as "UNSEEN from user@mail.com", or "SEEN from Tania" (Don`t ask me who Tania is - no idea.)
-    //	The line below searches on all outbound emails.  
-	      $mails = imap_search($this->mbox, 'ALL to '.$mail);
-        if ($mails)
-        {
-            rsort($mails);
-        
-            foreach ( $mails as $h)
-            {
-                $details = $this->get_message_details($h);
-                $data[] = $details;
-            }
-            // Save all collected data into DB
-            if (count($data))
-                $this->save_to_db($data, $mail);
-        }
-        
+        // max line length is 75 chars. New line is \\n
+ 
+        $output = "BEGIN:VCALENDAR
+        METHOD:PUBLISH
+        VERSION:2.0
+        PRODID:-//Thomas Multimedia//Clinic Time//EN\n";
+ 
+        // loop over events
+        foreach ($query_appointments->result() as $appointment):
+         $output .=
+        "BEGIN:VEVENT
+        SUMMARY:$appointment->firstname $appointment->surname
+        UID:$appointment->id
+        STATUS:" . strtoupper($appointment->status) . "
+        DTSTART:" . date(DATE_ICAL, strtotime($appointment->starts)) . "
+        DTEND:" . date(DATE_ICAL, strtotime($appointment->ends)) . "
+        LAST-MODIFIED:" . date(DATE_ICAL, strtotime($appointment->last_update)) . "
+        LOCATION:$appointment->location_name $appointment->name
+        END:VEVENT\n";
+        endforeach;
+ 
+        // close calendar
+        $output .= "END:VCALENDAR";
+ 
+        echo $output;
+         
     }
 
 
