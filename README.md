@@ -4,7 +4,7 @@
 This is a simple standalone app to conenct to the opencats databse, and generate an iCal feed for public appointments. 
 
 ##Usage
-<ADD>
+ < ADD >
 
 ##Configuration
 Please update your db info in config.php. 
@@ -15,7 +15,7 @@ RussH
 ##Comments and Questions
 Please post user questions in the OpenCATS forum. Issues can go into the issue list for this github repo 
 
-##info
+##Info
 Here is some info on some of the fields:
 
 PRODID:-//Thomas Multimedia//Clinic Mate//EN\n”;
@@ -55,5 +55,5 @@ The major thing to watch out for is formatting errors. iOS devices flatly refuse
 
 
 
-##source
+##Source
 Based upon https://stevethomas.com.au/php/how-to-build-an-ical-calendar-with-php-and-mysql.html
